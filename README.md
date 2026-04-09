@@ -1,5 +1,5 @@
 # Katib — Arabic Script Dataset Editor
-![Katib logo](katib.png)
+![Katib logo](katib.jpeg)
 
 **Katib** is a lightweight, browser-based editor for working with bilingual or Arabic-script datasets stored in **JSON** or **JSONL** files.
 

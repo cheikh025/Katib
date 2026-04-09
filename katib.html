@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Katib — Arabic Script Dataset Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Arabic:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232736;
+    --surface3: #2c3044;
+    --border: #333850;
+    --border-focus: #6c7ee6;
+    --text: #e4e6ef;
+    --text-dim: #8b8fa8;
+    --text-muted: #5c6078;
+    --accent: #6c7ee6;
+    --accent-soft: rgba(108,126,230,.12);
+    --accent-glow: rgba(108,126,230,.25);
+    --green: #34d399;
+    --green-bg: rgba(52,211,153,.1);
+    --amber: #fbbf24;
+    --amber-bg: rgba(251,191,36,.1);
+    --red: #f87171;
+    --red-bg: rgba(248,113,113,.1);
+    --radius: 10px;
+    --radius-lg: 16px;
+    --font-body: 'DM Sans', sans-serif;
+    --font-arabic: 'Noto Sans Arabic', 'DM Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  .app { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0 20px; border-bottom: 1px solid var(--border);
+    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #6c7ee6, #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-arabic); font-size: 22px; font-weight: 700; color: white;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .header h1 span { color: var(--text-dim); font-weight: 400; font-size: 15px; margin-left: 8px; }
+  .header p { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: var(--radius); border: none;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #7b8cf0; }
+  .btn-ghost { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--surface3); color: var(--text); }
+  .btn-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,.2); }
+  .btn-green:hover { background: rgba(52,211,153,.18); }
+  .btn-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(251,191,36,.2); }
+  .btn-amber:hover { background: rgba(251,191,36,.18); }
+  .btn-red { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .tabs {
+    display: flex; gap: 4px; background: var(--surface); padding: 4px;
+    border-radius: var(--radius); width: fit-content; margin-bottom: 16px;
+  }
+  .tab {
+    padding: 8px 20px; border-radius: 8px; border: none;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    cursor: pointer; background: transparent; color: var(--text-dim);
+    transition: all .15s;
+  }
+  .tab.active { background: var(--accent); color: white; }
+  .tab:not(.active):hover { color: var(--text); background: var(--surface2); }
+
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .stats { display: flex; gap: 16px; }
+  .stat {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-dim);
+  }
+  .stat strong { color: var(--text); font-weight: 600; font-size: 15px; }
+
+  .search-wrap { position: relative; width: 320px; }
+  .search-wrap input {
+    width: 100%; padding: 9px 14px 9px 36px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); font-family: var(--font-body); font-size: 13px;
+    outline: none; transition: border-color .15s;
+  }
+  .search-wrap input:focus { border-color: var(--border-focus); }
+  .search-wrap svg {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); width: 16px; height: 16px;
+  }
+
+  .main-grid {
+    display: grid; grid-template-columns: 1fr 360px; gap: 16px; align-items: start;
+  }
+  @media (max-width: 1080px) { .main-grid { grid-template-columns: 1fr; } }
+
+  .record-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: var(--surface);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border: 1px solid var(--border); border-bottom: none;
+  }
+  .record-nav .nav-group { display: flex; align-items: center; gap: 8px; }
+  .record-counter { font-size: 14px; font-weight: 600; min-width: 120px; text-align: center; }
+  .record-counter span { color: var(--text-dim); font-weight: 400; }
+
+  .record-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-top: none; border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    padding: 20px;
+  }
+
+  .field-group { margin-bottom: 20px; }
+  .field-group:last-child { margin-bottom: 0; }
+  .field-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .8px; color: var(--text-muted); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .field-label .lang-tag {
+    padding: 2px 8px; border-radius: 6px; font-size: 10px;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .lang-ltr { background: rgba(96,165,250,.12); color: #60a5fa; }
+  .lang-rtl { background: rgba(52,211,153,.12); color: #34d399; }
+
+  .field-textarea {
+    width: 100%; min-height: 100px; padding: 14px 16px;
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-body); font-size: 15px; line-height: 1.7;
+    resize: vertical; outline: none; transition: border-color .15s;
+  }
+  .field-textarea:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .field-textarea.arabic {
+    font-family: var(--font-arabic);
+    direction: rtl; text-align: right; font-size: 18px; line-height: 2;
+    min-height: 120px;
+  }
+
+  .record-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+  .record-list-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden; max-height: 70vh;
+    display: flex; flex-direction: column;
+  }
+  .record-list-header {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    font-size: 13px; font-weight: 600; flex-shrink: 0;
+  }
+  .record-list {
+    overflow-y: auto; flex: 1; scrollbar-width: thin;
+    scrollbar-color: var(--surface3) transparent;
+    position: relative;
+  }
+  .record-item {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background .1s; font-size: 13px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .record-item:hover { background: var(--surface2); }
+  .record-item.active { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+  .record-item .preview {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex: 1; color: var(--text-dim);
+  }
+  .record-item .idx {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+    min-width: 32px;
+  }
+  .record-item .dot-reviewed {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .raw-editor {
+    width: 100%; min-height: 600px; padding: 16px;
+    border-radius: var(--radius-lg); border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    font-family: var(--font-mono); font-size: 14px; line-height: 1.7;
+    resize: vertical; outline: none; transition: border-color .15s;
+  }
+  .raw-editor:focus { border-color: var(--border-focus); }
+
+  .keyboard-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px; margin-top: 16px;
+  }
+  .keyboard-panel h3 {
+    font-size: 14px; font-weight: 600; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .kbd-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+  .kbd-tab {
+    padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-dim); font-size: 12px;
+    font-family: var(--font-body); font-weight: 500; cursor: pointer;
+    transition: all .12s;
+  }
+  .kbd-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .kbd-tab:not(.active):hover { background: var(--surface2); }
+
+  .kbd-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px;
+  }
+  .kbd-key {
+    padding: 10px 0; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-family: var(--font-arabic); font-size: 18px; text-align: center;
+    cursor: pointer; transition: all .1s; user-select: none;
+  }
+  .kbd-key:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .kbd-key:active { transform: scale(.94); }
+
+  .kbd-utils { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .kbd-util {
+    padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text-dim); font-size: 13px;
+    font-family: var(--font-body); cursor: pointer; transition: all .12s;
+  }
+  .kbd-util:hover { background: var(--surface3); color: var(--text); }
+
+  .status-bar {
+    margin-top: 16px; padding: 10px 16px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .status-bar.ok { background: var(--green-bg); color: var(--green); }
+  .status-bar.error { background: var(--red-bg); color: var(--red); }
+  .status-bar.info { background: var(--accent-soft); color: var(--accent); }
+
+  .progress-wrap {
+    height: 4px; background: var(--surface3); border-radius: 99px;
+    overflow: hidden; width: 100%;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 99px; transition: width .3s ease;
+  }
+
+  .drop-overlay {
+    display: none; position: fixed; inset: 0; z-index: 999;
+    background: rgba(15,17,23,.88); backdrop-filter: blur(6px);
+    justify-content: center; align-items: center;
+  }
+  .drop-overlay.show { display: flex; }
+  .drop-inner {
+    border: 2px dashed var(--accent); border-radius: 24px;
+    padding: 60px 80px; text-align: center; color: var(--accent);
+    font-size: 20px; font-weight: 600;
+  }
+
+  .hidden { display: none !important; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+  .jump-input {
+    width: 56px; padding: 5px 8px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--text); font-family: var(--font-mono); font-size: 13px;
+    text-align: center; outline: none;
+  }
+  .jump-input:focus { border-color: var(--border-focus); }
+  input[type="file"] { display: none; }
+
+  /* ─── Field picker modal ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(15,17,23,.88); backdrop-filter: blur(6px);
+    justify-content: center; align-items: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 28px; max-width: 420px; width: 90%;
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 6px; }
+  .modal p { font-size: 13px; color: var(--text-dim); margin-bottom: 18px; }
+  .modal label {
+    display: block; font-size: 12px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; margin-top: 14px;
+  }
+  .modal select {
+    width: 100%; padding: 10px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+    font-family: var(--font-body); font-size: 14px; outline: none;
+    appearance: none; cursor: pointer;
+  }
+  .modal select:focus { border-color: var(--border-focus); }
+  .modal-actions { margin-top: 22px; display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<div class="drop-overlay" id="dropOverlay">
+  <div class="drop-inner">Drop your JSONL / JSON file here</div>
+</div>
+
+<!-- Field picker modal -->
+<div class="modal-overlay" id="fieldModal">
+  <div class="modal">
+    <h2>Map your fields</h2>
+    <p>Your data has more than 2 fields. Pick which field is the Latin (LTR) text and which is the Arabic script (RTL) text.</p>
+    <label>Latin / LTR field</label>
+    <select id="modalLtrSelect"></select>
+    <label>Arabic / RTL field</label>
+    <select id="modalRtlSelect"></select>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">ك</div>
+      <div>
+        <h1>Katib <span>كاتب</span></h1>
+        <p id="headerSubtitle">Latin ↔ Arabic script dataset editor</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <label class="btn btn-primary" for="fileInput">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Open file
+      </label>
+      <input id="fileInput" type="file" accept=".json,.jsonl,.txt" />
+      <button class="btn btn-green" id="validateBtn">✓ Validate</button>
+      <button class="btn btn-amber" id="downloadJsonlBtn">↓ JSONL</button>
+      <button class="btn btn-amber" id="downloadJsonBtn">↓ JSON</button>
+    </div>
+  </div>
+
+  <!-- Tabs & stats -->
+  <div class="top-bar">
+    <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+      <div class="tabs">
+        <button class="tab active" data-view="cards">Record view</button>
+        <button class="tab" data-view="raw">Raw editor</button>
+      </div>
+      <div class="stats" id="statsBar">
+        <div class="stat"><strong id="statTotal">0</strong> records</div>
+        <div class="stat"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;"></span> <strong id="statReviewed">0</strong> reviewed</div>
+        <div class="stat">
+          <div class="progress-wrap" style="width:100px;">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+          </div>
+          <span id="progressPct">0%</span>
+        </div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search across fields…" />
+    </div>
+  </div>
+
+  <!-- Card view -->
+  <div id="cardView">
+    <div class="main-grid">
+      <div>
+        <div class="record-nav">
+          <div class="nav-group">
+            <button class="btn btn-ghost btn-sm" id="prevBtn">← Prev</button>
+            <button class="btn btn-ghost btn-sm" id="nextBtn">Next →</button>
+          </div>
+          <div class="record-counter" id="recordCounter">No records</div>
+          <div class="nav-group">
+            <span style="font-size:12px;color:var(--text-muted)">Go to</span>
+            <input class="jump-input" id="jumpInput" type="number" min="1" />
+            <button class="btn btn-ghost btn-sm" id="jumpBtn">Go</button>
+          </div>
+        </div>
+
+        <div class="record-card" id="recordCard">
+          <div class="field-group">
+            <div class="field-label" id="ltrLabel">
+              <span class="lang-tag lang-ltr">LTR</span> <span id="ltrLabelText">Latin field</span>
+            </div>
+            <textarea class="field-textarea" id="fieldLtr" placeholder="Latin text…"></textarea>
+          </div>
+          <div class="field-group">
+            <div class="field-label" id="rtlLabel">
+              <span class="lang-tag lang-rtl">RTL</span> <span id="rtlLabelText">Arabic field</span>
+            </div>
+            <textarea class="field-textarea arabic" id="fieldRtl" placeholder="النص العربي…"></textarea>
+          </div>
+          <div class="record-actions">
+            <button class="btn btn-green btn-sm" id="markReviewedBtn">✓ Mark reviewed</button>
+            <button class="btn btn-ghost btn-sm" id="undoRecordBtn">↺ Undo changes</button>
+            <button class="btn btn-ghost btn-sm" id="deleteRecordBtn" style="margin-left:auto;">✕ Delete record</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:8px;">
+          <button class="btn btn-ghost btn-sm" id="addRecordBtn">+ Add new record</button>
+          <button class="btn btn-ghost btn-sm" id="duplicateRecordBtn">⧉ Duplicate current</button>
+        </div>
+
+        <div class="keyboard-panel" id="keyboardPanel">
+          <h3>
+            <span style="font-size:18px">⌨</span> Arabic keyboard
+            <button class="btn btn-ghost btn-sm" id="toggleKbdBtn" style="margin-left:auto;font-size:11px;">Hide</button>
+          </h3>
+          <div id="kbdBody">
+            <div class="kbd-tabs" id="kbdTabs">
+              <button class="kbd-tab active" data-set="standard">Standard</button>
+              <button class="kbd-tab" data-set="extended">Extended</button>
+              <button class="kbd-tab" data-set="marks">Diacritics</button>
+              <button class="kbd-tab" data-set="digits">Digits / Punct</button>
+            </div>
+            <div class="kbd-grid" id="kbdGrid"></div>
+            <div class="kbd-utils">
+              <button class="kbd-util" id="kbdSpace">Space</button>
+              <button class="kbd-util" id="kbdBackspace">⌫ Backspace</button>
+              <button class="kbd-util" id="kbdNewline">↵ New line</button>
+              <button class="kbd-util" id="kbdQuotes">" " Quotes</button>
+              <button class="kbd-util" id="kbdZwj">ZWJ</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="record-list-panel" id="listPanel">
+        <div class="record-list-header">
+          All records
+          <span style="float:right;color:var(--text-muted);font-weight:400;" id="filterInfo"></span>
+        </div>
+        <div class="record-list" id="recordList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raw view -->
+  <div id="rawView" class="hidden">
+    <textarea class="raw-editor" id="rawEditor" spellcheck="false" placeholder="Paste JSONL content here (one JSON object per line)…"></textarea>
+    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" id="rawParseBtn">Parse into records</button>
+      <button class="btn btn-ghost btn-sm" id="rawFormatBtn">Pretty-format each line</button>
+    </div>
+  </div>
+
+  <div class="status-bar ok" id="statusBar">Ready — open a JSONL or JSON file, or paste records in the raw editor.</div>
+</div>
+
+<script>
+// ─── State ───
+let records = [];        // [{ltr, rtl, reviewed, _original, _extra}]
+let currentIdx = 0;
+let filteredIndices = null;
+let lastFocusedField = null;
+let loadedFormat = 'jsonl';
+
+// Dynamic field keys (auto-detected from data)
+let ltrKey = 'latin';
+let rtlKey = 'arabic';
+
+const keySets = {
+  standard: ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د','ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط','ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ','آ','أ','إ','ٱ'],
+  extended: ['پ','چ','ڤ','گ','ڨ','ژ','ڭ','ݣ','ک','ی','ے','ۓ','ٹ','ڈ','ڑ','ں','ھ','ہ','ۀ','ە','ۆ','ۇ','ۈ','ۋ','ۅ','ۉ','ې','ێ','ػ','ؼ','ڮ','ڱ','ڴ','ڵ','ݜ','ݭ'],
+  marks: ['َ','ً','ُ','ٌ','ِ','ٍ','ْ','ّ','ٰ','ـ','ٓ','ٔ','ٕ','ٖ','ٗ','٘','ٙ','ٚ','ٛ','ٜ','ٝ','ٞ','ٟ','ؐ'],
+  digits: ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩','،','؛','؟','«','»','(',')','[',']','{','}','.',':','/']
+};
+
+// ─── DOM refs ───
+const $ = id => document.getElementById(id);
+const fieldLtr = $('fieldLtr');
+const fieldRtl = $('fieldRtl');
+const statusBar = $('statusBar');
+const recordList = $('recordList');
+const kbdGrid = $('kbdGrid');
+const searchInput = $('searchInput');
+const rawEditor = $('rawEditor');
+const jumpInput = $('jumpInput');
+
+// ─── Status ───
+function setStatus(msg, type = 'ok') {
+  statusBar.textContent = msg;
+  statusBar.className = 'status-bar ' + type;
+}
+
+// ─── Track focus ───
+fieldLtr.addEventListener('focus', () => lastFocusedField = fieldLtr);
+fieldRtl.addEventListener('focus', () => lastFocusedField = fieldRtl);
+
+// ─── Keyboard insert ───
+function insertAtCursor(text) {
+  const el = lastFocusedField || fieldRtl;
+  el.focus();
+  const start = el.selectionStart, end = el.selectionEnd;
+  el.value = el.value.slice(0, start) + text + el.value.slice(end);
+  const pos = start + text.length;
+  el.setSelectionRange(pos, pos);
+  syncFieldToRecord();
+}
+function backspaceAtCursor() {
+  const el = lastFocusedField || fieldRtl;
+  el.focus();
+  const start = el.selectionStart, end = el.selectionEnd;
+  if (start !== end) {
+    el.value = el.value.slice(0, start) + el.value.slice(end);
+    el.setSelectionRange(start, start);
+  } else if (start > 0) {
+    el.value = el.value.slice(0, start - 1) + el.value.slice(start);
+    el.setSelectionRange(start - 1, start - 1);
+  }
+  syncFieldToRecord();
+}
+
+// ─── Sync edits ───
+function syncFieldToRecord() {
+  if (!records.length) return;
+  records[currentIdx].ltr = fieldLtr.value;
+  records[currentIdx].rtl = fieldRtl.value;
+  updateListItem(currentIdx);
+}
+fieldLtr.addEventListener('input', syncFieldToRecord);
+fieldRtl.addEventListener('input', syncFieldToRecord);
+
+// ─── Update UI labels ───
+function updateFieldLabels() {
+  const ltrDisplay = ltrKey.charAt(0).toUpperCase() + ltrKey.slice(1);
+  const rtlDisplay = rtlKey.charAt(0).toUpperCase() + rtlKey.slice(1);
+  $('ltrLabelText').textContent = ltrDisplay;
+  $('rtlLabelText').textContent = rtlDisplay;
+  const ltrTag = $('ltrLabel').querySelector('.lang-tag');
+  const rtlTag = $('rtlLabel').querySelector('.lang-tag');
+  ltrTag.textContent = ltrKey.slice(0, 3).toUpperCase();
+  rtlTag.textContent = rtlKey.slice(0, 3).toUpperCase();
+  if (records.length) {
+    $('headerSubtitle').textContent = `Editing: ${ltrDisplay} ↔ ${rtlDisplay}`;
+  }
+}
+
+// ─── Auto-detect fields ───
+function detectFields(sampleObj) {
+  const keys = Object.keys(sampleObj).filter(k => !k.startsWith('_'));
+  if (keys.length === 0) return;
+
+  if (keys.length === 2) {
+    // Heuristic: check if second value contains Arabic characters
+    const hasArabic = v => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(v);
+    const v0 = String(sampleObj[keys[0]] || '');
+    const v1 = String(sampleObj[keys[1]] || '');
+    if (hasArabic(v1) && !hasArabic(v0)) {
+      ltrKey = keys[0]; rtlKey = keys[1];
+    } else if (hasArabic(v0) && !hasArabic(v1)) {
+      ltrKey = keys[1]; rtlKey = keys[0];
+    } else {
+      // Can't tell by content, use order (first=ltr, second=rtl)
+      ltrKey = keys[0]; rtlKey = keys[1];
+    }
+    updateFieldLabels();
+    return true; // auto-detected
+  }
+
+  // More than 2 keys: show picker modal
+  return new Promise(resolve => {
+    const ltrSel = $('modalLtrSelect');
+    const rtlSel = $('modalRtlSelect');
+    ltrSel.innerHTML = '';
+    rtlSel.innerHTML = '';
+    keys.forEach(k => {
+      ltrSel.innerHTML += `<option value="${k}">${k}</option>`;
+      rtlSel.innerHTML += `<option value="${k}">${k}</option>`;
+    });
+    // Pre-select best guesses
+    if (keys.length >= 2) {
+      ltrSel.value = keys[0];
+      rtlSel.value = keys[1];
+    }
+    $('fieldModal').classList.add('show');
+    $('modalConfirmBtn').onclick = () => {
+      ltrKey = ltrSel.value;
+      rtlKey = rtlSel.value;
+      $('fieldModal').classList.remove('show');
+      updateFieldLabels();
+      resolve();
+    };
+  });
+}
+
+// ─── Parse ───
+function objToRecord(obj) {
+  return {
+    ltr: String(obj[ltrKey] || ''),
+    rtl: String(obj[rtlKey] || ''),
+    reviewed: false,
+    _original: { ltr: String(obj[ltrKey] || ''), rtl: String(obj[rtlKey] || '') },
+    _extra: obj
+  };
+}
+
+function parseRawObjects(text) {
+  const trimmed = text.trim();
+  if (trimmed.startsWith('[')) {
+    try {
+      const arr = JSON.parse(trimmed);
+      if (Array.isArray(arr)) { loadedFormat = 'json'; return arr; }
+    } catch (_) {}
+  }
+  loadedFormat = 'jsonl';
+  const lines = text.split(/\r?\n/);
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    try { out.push(JSON.parse(line)); }
+    catch (e) { throw new Error(`Line ${i + 1}: ${e.message}`); }
+  }
+  return out;
+}
+
+// ─── Serialize ───
+function recordToObj(r) {
+  const obj = { ...(r._extra || {}) };
+  obj[ltrKey] = r.ltr;
+  obj[rtlKey] = r.rtl;
+  return obj;
+}
+function toJSONL() {
+  return records.map(r => JSON.stringify(recordToObj(r))).join('\n');
+}
+function toJSONArray() {
+  return JSON.stringify(records.map(recordToObj), null, 2);
+}
+
+// ─── Virtual scrolling for record list ───
+const ITEM_H = 41; // px per row (10px padding*2 + ~20px content + 1px border)
+const BUFFER = 8;  // extra rows above/below viewport
+let visibleIndices = []; // the indices array (filtered or all)
+
+function getVisibleIndices() {
+  return filteredIndices || records.map((_, i) => i);
+}
+
+function renderList() {
+  visibleIndices = getVisibleIndices();
+  $('filterInfo').textContent = filteredIndices ? `${visibleIndices.length} match` : '';
+  // Set up spacer for full virtual height
+  recordList.innerHTML = `<div id="vSpacer" style="height:${visibleIndices.length * ITEM_H}px;position:relative;"></div>`;
+  renderVisibleItems();
+}
+
+function renderVisibleItems() {
+  const spacer = $('vSpacer');
+  if (!spacer) return;
+  const scrollTop = recordList.scrollTop;
+  const viewH = recordList.clientHeight;
+  const startRow = Math.max(0, Math.floor(scrollTop / ITEM_H) - BUFFER);
+  const endRow = Math.min(visibleIndices.length - 1, Math.ceil((scrollTop + viewH) / ITEM_H) + BUFFER);
+
+  // Clear existing items but keep spacer height
+  const oldItems = spacer.querySelectorAll('.record-item');
+  oldItems.forEach(el => el.remove());
+
+  for (let row = startRow; row <= endRow; row++) {
+    const i = visibleIndices[row];
+    const r = records[i];
+    if (!r) continue;
+    const div = document.createElement('div');
+    div.className = 'record-item' + (i === currentIdx ? ' active' : '');
+    div.dataset.idx = i;
+    div.dataset.row = row;
+    div.style.position = 'absolute';
+    div.style.top = (row * ITEM_H) + 'px';
+    div.style.left = '0';
+    div.style.right = '0';
+    div.style.height = ITEM_H + 'px';
+    div.innerHTML = `
+      <span class="idx">${i + 1}</span>
+      <span class="preview">${escHtml(r.ltr || r.rtl || '(empty)')}</span>
+      <span class="dot-reviewed" style="background:${r.reviewed ? 'var(--green)' : 'var(--surface3)'}"></span>
+    `;
+    div.onclick = () => goTo(i);
+    spacer.appendChild(div);
+  }
+}
+
+// Throttled scroll handler
+let scrollRaf = null;
+recordList.addEventListener('scroll', () => {
+  if (scrollRaf) return;
+  scrollRaf = requestAnimationFrame(() => {
+    renderVisibleItems();
+    scrollRaf = null;
+  });
+});
+
+function updateListItem(idx) {
+  const el = recordList.querySelector(`[data-idx="${idx}"]`);
+  if (!el) return; // not currently visible — that's fine
+  const r = records[idx];
+  el.querySelector('.preview').textContent = r.ltr || r.rtl || '(empty)';
+  el.querySelector('.dot-reviewed').style.background = r.reviewed ? 'var(--green)' : 'var(--surface3)';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ─── Navigate ───
+function goTo(idx) {
+  if (!records.length) return;
+  currentIdx = Math.max(0, Math.min(idx, records.length - 1));
+  const r = records[currentIdx];
+  fieldLtr.value = r.ltr;
+  fieldRtl.value = r.rtl;
+  $('recordCounter').innerHTML = `<strong>${currentIdx + 1}</strong> <span>of ${records.length}</span>`;
+  jumpInput.value = currentIdx + 1;
+  jumpInput.max = records.length;
+  updateReviewBadge();
+
+  // Scroll the virtual list to show the active record
+  const rowInList = visibleIndices.indexOf(currentIdx);
+  if (rowInList >= 0) {
+    const itemTop = rowInList * ITEM_H;
+    const viewH = recordList.clientHeight;
+    const scrollTop = recordList.scrollTop;
+    if (itemTop < scrollTop || itemTop + ITEM_H > scrollTop + viewH) {
+      recordList.scrollTop = itemTop - viewH / 2 + ITEM_H / 2;
+    }
+  }
+  renderVisibleItems();
+  updateStats();
+}
+
+$('prevBtn').onclick = () => goTo(currentIdx - 1);
+$('nextBtn').onclick = () => goTo(currentIdx + 1);
+$('jumpBtn').onclick = () => {
+  const v = parseInt(jumpInput.value);
+  if (v >= 1 && v <= records.length) goTo(v - 1);
+};
+jumpInput.addEventListener('keydown', e => { if (e.key === 'Enter') $('jumpBtn').click(); });
+
+// ─── Keyboard shortcuts ───
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      records[currentIdx].reviewed = true;
+      updateReviewBadge(); updateListItem(currentIdx);
+      goTo(currentIdx + 1);
+    }
+    return;
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goTo(currentIdx - 1); }
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); goTo(currentIdx + 1); }
+});
+
+// ─── Review ───
+function updateReviewBadge() {
+  if (!records.length) return;
+  const btn = $('markReviewedBtn');
+  if (records[currentIdx].reviewed) {
+    btn.textContent = '✓ Reviewed';
+    btn.className = 'btn btn-green btn-sm';
+  } else {
+    btn.textContent = '○ Mark reviewed';
+    btn.className = 'btn btn-ghost btn-sm';
+  }
+}
+$('markReviewedBtn').onclick = () => {
+  if (!records.length) return;
+  records[currentIdx].reviewed = !records[currentIdx].reviewed;
+  updateReviewBadge(); updateListItem(currentIdx); updateStats();
+};
+
+// ─── Undo ───
+$('undoRecordBtn').onclick = () => {
+  if (!records.length) return;
+  const r = records[currentIdx];
+  r.ltr = r._original.ltr;
+  r.rtl = r._original.rtl;
+  fieldLtr.value = r.ltr;
+  fieldRtl.value = r.rtl;
+  updateListItem(currentIdx);
+  setStatus('Reverted record to original.', 'info');
+};
+
+// ─── Delete ───
+$('deleteRecordBtn').onclick = () => {
+  if (!records.length) return;
+  if (!confirm(`Delete record ${currentIdx + 1}?`)) return;
+  records.splice(currentIdx, 1);
+  if (currentIdx >= records.length) currentIdx = Math.max(0, records.length - 1);
+  filteredIndices = null; searchInput.value = '';
+  renderList();
+  if (records.length) goTo(currentIdx); else clearFields();
+  updateStats();
+  setStatus('Record deleted.', 'info');
+};
+
+// ─── Add / Duplicate ───
+$('addRecordBtn').onclick = () => {
+  const nr = { ltr: '', rtl: '', reviewed: false, _original: { ltr: '', rtl: '' }, _extra: {} };
+  nr._extra[ltrKey] = '';
+  nr._extra[rtlKey] = '';
+  records.splice(currentIdx + 1, 0, nr);
+  filteredIndices = null; searchInput.value = '';
+  renderList();
+  goTo(currentIdx + 1);
+  fieldLtr.focus();
+  setStatus('New empty record added.', 'info');
+};
+$('duplicateRecordBtn').onclick = () => {
+  if (!records.length) return;
+  const src = records[currentIdx];
+  const nr = { ltr: src.ltr, rtl: src.rtl, reviewed: false, _original: { ltr: src.ltr, rtl: src.rtl }, _extra: { ...src._extra } };
+  records.splice(currentIdx + 1, 0, nr);
+  filteredIndices = null; searchInput.value = '';
+  renderList();
+  goTo(currentIdx + 1);
+  setStatus('Record duplicated.', 'info');
+};
+
+function clearFields() {
+  fieldLtr.value = '';
+  fieldRtl.value = '';
+  $('recordCounter').textContent = 'No records';
+}
+
+// ─── Stats ───
+function updateStats() {
+  $('statTotal').textContent = records.length;
+  const rev = records.filter(r => r.reviewed).length;
+  $('statReviewed').textContent = rev;
+  const pct = records.length ? Math.round(rev / records.length * 100) : 0;
+  $('progressFill').style.width = pct + '%';
+  $('progressPct').textContent = pct + '%';
+}
+
+// ─── Search ───
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) { filteredIndices = null; renderList(); return; }
+  filteredIndices = [];
+  records.forEach((r, i) => {
+    if (r.ltr.toLowerCase().includes(q) || r.rtl.includes(q)) {
+      filteredIndices.push(i);
+    }
+  });
+  renderList();
+  setStatus(`Found ${filteredIndices.length} records matching "${searchInput.value.trim()}"`, 'info');
+});
+
+// ─── File loading ───
+async function loadText(text, fileName) {
+  try {
+    const rawObjects = parseRawObjects(text);
+    if (rawObjects.length === 0) { setStatus('No records found.', 'error'); return; }
+
+    // Detect fields from first object
+    const detected = detectFields(rawObjects[0]);
+    if (detected instanceof Promise) await detected;
+
+    records = rawObjects.map(objToRecord);
+    filteredIndices = null;
+    searchInput.value = '';
+    renderList();
+    goTo(0);
+    updateStats();
+    rawEditor.value = text;
+    const fmt = loadedFormat === 'json' ? 'JSON array' : 'JSONL';
+    setStatus(`Loaded ${records.length} records from ${fileName || 'file'} (${fmt}) — fields: ${ltrKey} ↔ ${rtlKey}`, 'ok');
+  } catch (e) {
+    setStatus('Parse error: ' + e.message, 'error');
+  }
+}
+
+fileInput.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  loadText(await file.text(), file.name);
+});
+
+// Drag & drop
+document.addEventListener('dragover', e => { e.preventDefault(); $('dropOverlay').classList.add('show'); });
+$('dropOverlay').addEventListener('dragleave', () => $('dropOverlay').classList.remove('show'));
+$('dropOverlay').addEventListener('drop', async e => {
+  e.preventDefault(); $('dropOverlay').classList.remove('show');
+  const file = e.dataTransfer.files[0];
+  if (file) loadText(await file.text(), file.name);
+});
+
+// ─── Validate ───
+$('validateBtn').onclick = () => {
+  try {
+    const text = toJSONL();
+    const lines = text.split('\n');
+    lines.forEach((l, i) => { if (l.trim()) JSON.parse(l); });
+    setStatus(`All ${records.length} records are valid JSONL.`, 'ok');
+  } catch (e) {
+    setStatus('Validation error: ' + e.message, 'error');
+  }
+};
+
+// ─── Download ───
+function downloadFile(content, filename) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  setStatus(`Downloaded ${filename}`, 'ok');
+}
+$('downloadJsonlBtn').onclick = () => downloadFile(toJSONL(), 'edited.jsonl');
+$('downloadJsonBtn').onclick = () => downloadFile(toJSONArray(), 'edited.json');
+
+// ─── Tabs ───
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const view = tab.dataset.view;
+    $('cardView').classList.toggle('hidden', view !== 'cards');
+    $('rawView').classList.toggle('hidden', view !== 'raw');
+    if (view === 'raw') rawEditor.value = toJSONL();
+  };
+});
+
+// ─── Raw editor ───
+$('rawParseBtn').onclick = () => loadText(rawEditor.value, 'pasted content');
+$('rawFormatBtn').onclick = () => {
+  try {
+    const lines = rawEditor.value.split(/\r?\n/);
+    rawEditor.value = lines.map(l => {
+      const t = l.trim();
+      if (!t) return '';
+      return JSON.stringify(JSON.parse(t), null, 2);
+    }).join('\n');
+    setStatus('Formatted each JSONL line.', 'ok');
+  } catch (e) { setStatus(e.message, 'error'); }
+};
+
+// ─── Keyboard ───
+function renderKbd(setName) {
+  kbdGrid.innerHTML = '';
+  document.querySelectorAll('.kbd-tab').forEach(t => t.classList.toggle('active', t.dataset.set === setName));
+  keySets[setName].forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'kbd-key';
+    btn.textContent = k;
+    btn.onmousedown = e => { e.preventDefault(); insertAtCursor(k); };
+    kbdGrid.appendChild(btn);
+  });
+}
+document.querySelectorAll('.kbd-tab').forEach(t => {
+  t.onclick = () => renderKbd(t.dataset.set);
+});
+renderKbd('standard');
+
+$('kbdSpace').onmousedown = e => { e.preventDefault(); insertAtCursor(' '); };
+$('kbdBackspace').onmousedown = e => { e.preventDefault(); backspaceAtCursor(); };
+$('kbdNewline').onmousedown = e => { e.preventDefault(); insertAtCursor('\n'); };
+$('kbdQuotes').onmousedown = e => { e.preventDefault(); insertAtCursor('""'); };
+$('kbdZwj').onmousedown = e => { e.preventDefault(); insertAtCursor('\u200D'); };
+
+$('toggleKbdBtn').onclick = () => {
+  const body = $('kbdBody');
+  const hidden = body.classList.toggle('hidden');
+  $('toggleKbdBtn').textContent = hidden ? 'Show' : 'Hide';
+};
+
+// ─── Init ───
+updateFieldLabels();
+updateStats();
+</script>
+</body>
+</html>
